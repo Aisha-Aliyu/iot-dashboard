@@ -61,6 +61,15 @@ const PORT = process.env.PORT || 5000;
 const start = async () => {
   await connectDB();
 
+    // Auto-seed if no users exist
+  const { PrismaClient } = require("@prisma/client");
+  const prisma = new PrismaClient();
+  const userCount = await prisma.user.count();
+  if (userCount === 0) {
+    console.log("🌱 No users found — running seed...");
+    require("./prisma/seed");
+  }
+
   // WebSocket server
   const wsServer = new WSServer(httpServer);
 
