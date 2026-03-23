@@ -24,14 +24,23 @@ const httpServer = http.createServer(app);
 
 app.set("trust proxy", 1);
 
+// CORS config
+const corsOptions = {
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 200,
+};
+
+// Handle preflight for ALL routes first
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
+
 // Security
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(securityHeaders);
 app.use(compression());
-app.use(cors({
-  origin: process.env.CLIENT_URL,
-  credentials: true,
-}));
 app.use(sanitizeRequest);
 app.use(express.json({ limit: "10kb" }));
 if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
@@ -55,18 +64,17 @@ app.get("/health", (req, res) => res.json({
 
 app.use(errorHandler);
 
-// Start
 const PORT = process.env.PORT || 5000;
 
 const start = async () => {
   await connectDB();
 
-    // Auto-seed if no users exist
+  // Auto-seed if no users exist
   const { PrismaClient } = require("@prisma/client");
   const prisma = new PrismaClient();
   const userCount = await prisma.user.count();
   if (userCount === 0) {
-    console.log("🌱 No users found — running seed...");
+    console.log("No users found — running seed...");
     require("./prisma/seed");
   }
 
@@ -85,7 +93,6 @@ Sensor simulation running every ${process.env.SIMULATION_INTERVAL_MS || 3000}ms
     `);
   });
 
-  // Graceful shutdown
   process.on("SIGTERM", () => {
     simulator.stop();
     httpServer.close();
