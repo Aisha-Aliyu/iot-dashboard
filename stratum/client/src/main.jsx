@@ -6,10 +6,6 @@ import { Toaster } from "react-hot-toast";
 import App from "./App.jsx";
 import "./styles/global.css";
 
-if (import.meta.env.DEV === false) {
-  import("https://cdn.jsdelivr.net/npm/eruda").then(() => eruda.init());
-}
-
 
 const queryClient = new QueryClient({
   defaultOptions: {
