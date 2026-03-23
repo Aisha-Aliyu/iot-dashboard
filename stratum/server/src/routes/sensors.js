@@ -1,0 +1,10 @@
+const express = require("express");
+const { getAll, getById, getHistory, update } = require("../controllers/sensorController");
+const { authenticate, requireRole } = require("../middleware/auth");
+const router = express.Router();
+router.use(authenticate);
+router.get("/", getAll);
+router.get("/:id", getById);
+router.get("/:id/history", getHistory);
+router.put("/:id", requireRole("ADMIN", "OPERATOR"), update);
+module.exports = router;
