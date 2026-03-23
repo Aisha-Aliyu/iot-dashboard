@@ -1,0 +1,10 @@
+const express = require("express");
+const { getActive, getAll, acknowledge, resolve } = require("../controllers/alertController");
+const { authenticate, requireRole } = require("../middleware/auth");
+const router = express.Router();
+router.use(authenticate);
+router.get("/active", getActive);
+router.get("/", getAll);
+router.put("/:id/acknowledge", requireRole("ADMIN", "OPERATOR"), acknowledge);
+router.put("/:id/resolve", requireRole("ADMIN", "OPERATOR"), resolve);
+module.exports = router;
