@@ -31,7 +31,6 @@ const Login = () => {
       padding: "24px",
       position: "relative",
     }}>
-      {/* Scan line animation */}
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0,
         height: "2px",
@@ -42,7 +41,6 @@ const Login = () => {
       }} />
 
       <div style={{ width: "100%", maxWidth: "420px" }}>
-        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: "16px",
@@ -135,24 +133,6 @@ const Login = () => {
                 {loading ? "AUTHENTICATING..." : "INITIATE ACCESS"}
               </button>
             </form>
-
-            <div style={{
-              marginTop: "20px",
-              padding: "12px",
-              background: "var(--color-bg-raised)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--color-border)",
-            }}>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)", marginBottom: "4px" }}>
-                // DEMO CREDENTIALS
-              </p>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--color-text-sec)" }}>
-                admin@stratum.io / Stratum@Admin1!
-              </p>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--color-text-sec)" }}>
-                operator@stratum.io / Stratum@Op1!
-              </p>
-            </div>
           </div>
         </HudCard>
       </div>
