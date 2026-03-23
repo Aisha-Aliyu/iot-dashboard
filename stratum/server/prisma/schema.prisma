@@ -1,0 +1,146 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SensorType {
+  TEMPERATURE
+  HUMIDITY
+  ENERGY
+  MOTION
+  AIR_QUALITY
+}
+
+enum SensorStatus {
+  ONLINE
+  OFFLINE
+  WARNING
+  CRITICAL
+  MAINTENANCE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String
+  displayName  String?
+  role         UserRole  @default(VIEWER)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  acknowledgedAlerts Alert[] @relation("AcknowledgedBy")
+  resolvedAlerts     Alert[] @relation("ResolvedBy")
+
+  @@index([email])
+}
+
+model Sensor {
+  id           String       @id @default(uuid())
+  name         String
+  type         SensorType
+  location     String
+  floor        Int          @default(1)
+  zone         String
+  status       SensorStatus @default(ONLINE)
+  isActive     Boolean      @default(true)
+
+  // Position on floor map (0-100 percentage)
+  posX         Float        @default(50)
+  posY         Float        @default(50)
+
+  // Thresholds
+  minThreshold Float?
+  maxThreshold Float?
+  unit         String
+
+  // Meta
+  model        String?
+  firmware     String?
+  installedAt  DateTime     @default(now())
+  lastSeenAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  readings     Reading[]
+  alerts       Alert[]
+
+  @@index([type])
+  @@index([status])
+  @@index([floor, zone])
+}
+
+model Reading {
+  id        String   @id @default(uuid())
+  sensorId  String
+  sensor    Sensor   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  value     Float
+  unit      String
+  quality   Int      @default(100)
+  timestamp DateTime @default(now())
+
+  @@index([sensorId, timestamp])
+  @@index([timestamp])
+}
+
+model Alert {
+  id           String        @id @default(uuid())
+  sensorId     String
+  sensor       Sensor        @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  severity     AlertSeverity
+  status       AlertStatus   @default(ACTIVE)
+  title        String
+  message      String
+  value        Float?
+  threshold    Float?
+
+  acknowledgedById String?
+  acknowledgedBy   User?     @relation("AcknowledgedBy", fields: [acknowledgedById], references: [id])
+  acknowledgedAt   DateTime?
+
+  resolvedById String?
+  resolvedBy   User?   @relation("ResolvedBy", fields: [resolvedById], references: [id])
+  resolvedAt   DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([sensorId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model SystemEvent {
+  id        String   @id @default(uuid())
+  type      String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+}
