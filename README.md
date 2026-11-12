@@ -29,14 +29,17 @@ The backend runs a sensor simulation engine that generates realistic data patter
 ## Live Demo
 
 **Frontend:** [humsy-stratum.vercel.app](https://humsy-stratum.vercel.app)
-**API Health:** [iot-dashboard-production-e01a.up.railway.app/health](https://iot-dashboard-production-e01a.up.railway.app/health)
 
-**Demo credentials:**
+Tap TRY THE DEMO on the login page to sign in as the demo operator in one step, or sign in with:
 
 ```
-Admin:    admin@stratum.io    /  Stratum@Admin1!
-Operator: operator@stratum.io /  Stratum@Op1!
+Email:    operator@stratum.io
+Password: Stratum@Op1!
 ```
+
+The API runs on Render's free plan, which sleeps after 15 minutes without visitors. The login page starts waking it as soon as it opens and shows when it's online. The first sign-in after a quiet spell can take about a minute.
+
+The demo account can acknowledge and resolve alerts, but it can't change its password or edit sensors, so the demo stays the same for the next visitor.
 
 -----
 
@@ -97,7 +100,7 @@ Operator: operator@stratum.io /  Stratum@Op1!
 |Server state     |TanStack Query v5                                      |
 |Charts           |Recharts                                               |
 |Security         |Helmet, xss, express-rate-limit, body size limits      |
-|Deployment       |Railway (backend), Vercel (frontend), Neon (PostgreSQL)|
+|Deployment       |Render (backend), Vercel (frontend), Neon (PostgreSQL)|
 
 -----
 
@@ -225,7 +228,7 @@ cp .env.example .env
 # Fill in DATABASE_URL and JWT_SECRET
 npx prisma generate
 npx prisma db push
-npm run db:seed
+npm run db:seed   # adds the sensors and the demo account
 npm run dev
 ```
 
@@ -256,11 +259,13 @@ PORT=5000
 NODE_ENV=development
 DATABASE_URL=postgresql://...
 JWT_SECRET=64_char_hex
-JWT_EXPIRES_IN=7d
+JWT_EXPIRES_IN=8h
 CLIENT_URL=http://localhost:5173
 SIMULATION_INTERVAL_MS=3000
-SENSORS_PER_TYPE=4
+ADMIN_PASSWORD=
 ```
+
+`ADMIN_PASSWORD` is optional. When it's set (12 or more characters), `admin@stratum.io` signs in with it. When it isn't, the admin account stays switched off. The demo account is created and checked on every start.
 
 **client/.env**
 
@@ -268,6 +273,14 @@ SENSORS_PER_TYPE=4
 VITE_API_URL=http://localhost:5000/api
 VITE_WS_URL=ws://localhost:5000/ws
 ```
+
+-----
+
+## Deployment
+
+The API deploys to Render's free plan from `render.yaml`. In Render, choose New, then Blueprint, and pick this repository. Render generates `JWT_SECRET` and asks for `DATABASE_URL` and the optional `ADMIN_PASSWORD`. Use Neon's direct connection string, with connection pooling turned off, because `prisma db push` can stall on the pooled one. On every start the server applies the Prisma schema, checks the demo and admin accounts, and adds the 16 sensors to a new database.
+
+The frontend deploys to Vercel from `stratum/client`, with `VITE_API_URL` set to `https://<render-service>/api` and `VITE_WS_URL` set to `wss://<render-service>/ws`.
 
 -----
 

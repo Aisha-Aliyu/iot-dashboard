@@ -2,12 +2,13 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { prisma } = require("../config/database");
+const { isDemoUser } = require("../config/accounts");
 
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body ?? {};
 
-    if (!email || !password) {
+    if (typeof email !== "string" || typeof password !== "string" || !email || !password) {
       return res.status(400).json({
         success: false,
         message: "Email and password required",
@@ -36,7 +37,7 @@ const login = async (req, res, next) => {
     const token = jwt.sign(
       { sub: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "8h" }
     );
 
     const { password: _, ...safeUser } = user;
@@ -66,9 +67,18 @@ const getMe = async (req, res, next) => {
 
 const changePassword = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    // Everyone shares the demo account, so its password stays the one on the login page
+    if (isDemoUser(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: "The demo account's password can't be changed",
+      });
+    }
 
-    if (!currentPassword || !newPassword) {
+    const { currentPassword, newPassword } = req.body ?? {};
+
+    if (typeof currentPassword !== "string" || typeof newPassword !== "string" ||
+        !currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
         message: "Both current and new password are required",

@@ -1,0 +1,24 @@
+# Render Blueprint for the STRATUM API on the free plan.
+# Render > New > Blueprint > pick this repo. It asks for the values marked sync: false.
+services:
+  - type: web
+    name: stratum-api
+    runtime: node
+    plan: free
+    rootDir: stratum/server
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npx prisma db push --skip-generate && node index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: CLIENT_URL
+        value: https://humsy-stratum.vercel.app
+      - key: ADMIN_PASSWORD
+        sync: false
