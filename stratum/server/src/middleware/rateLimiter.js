@@ -11,9 +11,11 @@ const apiLimiter = rateLimit({
   message: { success: false, message: "Too many requests" },
 });
 
+// Visitors on a shared network (a campus or office) share one IP, and the demo button
+// makes logging in easy, so allow a few more attempts than a private app would
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => ipKeyGenerator(req),

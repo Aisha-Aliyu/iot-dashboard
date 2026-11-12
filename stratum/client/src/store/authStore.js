@@ -21,7 +21,8 @@ const useAuthStore = create(
           set({ user: data.user, token: data.token, isAuthenticated: true });
           return { success: true };
         } catch (err) {
-          if (!err.response) {
+          // No answer, or the host's own error while the server starts
+          if (!err.response || [502, 503, 504].includes(err.response.status)) {
             return {
               success: false,
               message: "Can't reach the server yet. It may be waking up, so try again in a minute.",

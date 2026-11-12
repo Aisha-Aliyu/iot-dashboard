@@ -26,14 +26,20 @@ const useServerStatus = () => {
     let attempts = 0;
 
     const check = async () => {
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), 8000);
       try {
-        const res = await fetch(HEALTH_URL, { cache: "no-store" });
-        if (res.ok) {
+        const res = await fetch(HEALTH_URL, { cache: "no-store", signal: controller.signal });
+        const body = res.ok ? await res.json() : null;
+        // Only the API's own answer counts, not a page served by the host while it wakes
+        if (body?.status === "OK") {
           if (!cancelled) setStatus("online");
           return;
         }
       } catch {
         // Still asleep or starting up
+      } finally {
+        clearTimeout(abortTimer);
       }
       if (cancelled) return;
       attempts += 1;

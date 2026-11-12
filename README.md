@@ -278,7 +278,7 @@ VITE_WS_URL=ws://localhost:5000/ws
 
 ## Deployment
 
-The API deploys to Render's free plan from `render.yaml`. In Render, choose New, then Blueprint, and pick this repository. Render generates `JWT_SECRET` and asks for `DATABASE_URL` (the Neon connection string) and the optional `ADMIN_PASSWORD`. On every start the server applies the Prisma schema, checks the demo and admin accounts, and adds the 16 sensors to a new database.
+The API deploys to Render's free plan from `render.yaml`. In Render, choose New, then Blueprint, and pick this repository. Render generates `JWT_SECRET` and asks for `DATABASE_URL` and the optional `ADMIN_PASSWORD`. Use Neon's direct connection string, with connection pooling turned off, because `prisma db push` can stall on the pooled one. On every start the server applies the Prisma schema, checks the demo and admin accounts, and adds the 16 sensors to a new database.
 
 The frontend deploys to Vercel from `stratum/client`, with `VITE_API_URL` set to `https://<render-service>/api` and `VITE_WS_URL` set to `wss://<render-service>/ws`.
 
