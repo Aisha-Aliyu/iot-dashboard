@@ -8,7 +8,9 @@ const securityHeaders = require("./src/middleware/securityHeaders");
 const morgan = require("morgan");
 const compression = require("compression");
 
-const { connectDB } = require("./src/config/database");
+const { prisma, connectDB } = require("./src/config/database");
+const { ensureAccounts } = require("./src/config/accounts");
+const { seedSensors } = require("./prisma/seed");
 const { WSServer } = require("./src/websocket/WSServer");
 const { SensorSimulator } = require("./src/simulation/SensorSimulator");
 const { apiLimiter } = require("./src/middleware/rateLimiter");
@@ -18,6 +20,13 @@ const authRoutes      = require("./src/routes/auth");
 const dashboardRoutes = require("./src/routes/dashboard");
 const sensorRoutes    = require("./src/routes/sensors");
 const alertRoutes     = require("./src/routes/alerts");
+
+// Stop with a clear message instead of failing on the first login
+const missingEnv = ["DATABASE_URL", "JWT_SECRET", "CLIENT_URL"].filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`Missing environment variables: ${missingEnv.join(", ")}`);
+  process.exit(1);
+}
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -79,14 +88,10 @@ const PORT = process.env.PORT || 5000;
 const start = async () => {
   await connectDB();
 
-  // Auto-seed if no users exist
-  const { PrismaClient } = require("@prisma/client");
-  const prisma = new PrismaClient();
-  const userCount = await prisma.user.count();
-  if (userCount === 0) {
-    console.log("No users found — running seed...");
-    require("./prisma/seed");
-  }
+  // Keep the demo and admin accounts right, and add the sensors to a new database
+  await ensureAccounts(prisma);
+  const added = await seedSensors(prisma);
+  if (added > 0) console.log(`Added ${added} sensors to a new database`);
 
   // WebSocket server
   const wsServer = new WSServer(httpServer);

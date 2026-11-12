@@ -1,7 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs");
-
-const prisma = new PrismaClient();
+const { ensureAccounts } = require("../src/config/accounts");
 
 const SENSORS = [
   // TEMPERATURE: 4 sensors
@@ -29,47 +27,28 @@ const SENSORS = [
   { name: "Cam Zone B",       type: "MOTION", location: "Server Room",  floor: 1, zone: "Zone A", posX: 18, posY: 28, unit: "events/min", maxThreshold: 5,  model: "HC-SR501-NET", firmware: "v1.2.7" },
 ];
 
-async function main() {
-  console.log("🌱 Seeding STRATUM database...");
-
-  // Admin user
-  const password = await bcrypt.hash("Stratum@Admin1!", 12);
-  await prisma.user.upsert({
-    where: { email: "admin@stratum.io" },
-    update: {},
-    create: {
-      email: "admin@stratum.io",
-      password,
-      displayName: "STRATUM Admin",
-      role: "ADMIN",
-    },
-  });
-
-  // Operator user
-  const opPassword = await bcrypt.hash("Stratum@Op1!", 12);
-  await prisma.user.upsert({
-    where: { email: "operator@stratum.io" },
-    update: {},
-    create: {
-      email: "operator@stratum.io",
-      password: opPassword,
-      displayName: "Operator One",
-      role: "OPERATOR",
-    },
-  });
-
-  // Sensors
-  for (const sensor of SENSORS) {
-    await prisma.sensor.upsert({
-      where: { id: sensor.name },
-      update: {},
-      create: { ...sensor, id: undefined },
-    });
-  }
-
-  console.log(`Seeded: 2 users, ${SENSORS.length} sensors`);
-  console.log("Admin:    admin@stratum.io / Stratum@Admin1!");
-  console.log("Operator: operator@stratum.io / Stratum@Op1!");
+// Adds the simulated sensors when the database has none, and returns how many it added
+async function seedSensors(prisma) {
+  const count = await prisma.sensor.count();
+  if (count > 0) return 0;
+  await prisma.sensor.createMany({ data: SENSORS });
+  return SENSORS.length;
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+module.exports = { SENSORS, seedSensors };
+
+// npm run db:seed
+if (require.main === module) {
+  require("dotenv").config();
+  const prisma = new PrismaClient();
+  (async () => {
+    await ensureAccounts(prisma);
+    const added = await seedSensors(prisma);
+    console.log(`Added ${added} sensors and checked the demo and admin accounts`);
+  })()
+    .catch((err) => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}
